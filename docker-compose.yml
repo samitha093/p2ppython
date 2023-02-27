@@ -1,0 +1,60 @@
+version: '3.1'
+#create network interface
+networks:
+  FLp2p:
+    name: FLp2p
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+services:
+#init server 1
+  sv1:
+    container_name: sv1
+    image: svimg
+    build:
+      context:  ./sever
+      dockerfile:  Dockerfile
+    stdin_open: true
+    tty: true
+    volumes:
+      - ./sever:/app/sever
+    networks:
+      FLp2p:
+        ipv4_address: 172.20.2.3
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+    # restart: on-failure:3
+#init cart 1
+  cart1:
+    container_name: cart1
+    image: cartimg
+    build:
+      context:  ./cart
+      dockerfile:  Dockerfile
+    stdin_open: true
+    tty: true
+    volumes:
+      - ./cart:/app/cart
+    networks:
+      FLp2p:
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+    # restart: on-failure:3
+#init cart 2
+  cart2:
+    container_name: cart2
+    image: cartimg
+    build:
+      context:  ./cart
+      dockerfile:  Dockerfile
+    stdin_open: true
+    tty: true
+    volumes:
+      - ./cart:/app/cart
+    networks:
+      FLp2p:
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+    # restart: on-failure:3
+
