@@ -8,9 +8,8 @@ networks:
       config:
         - subnet: 172.20.0.0/16
 services:
-#init server 1
-  sv1:
-    container_name: sv1
+#init server
+  sv:
     image: svimg
     build:
       context:  ./sever
@@ -24,11 +23,12 @@ services:
         ipv4_address: 172.20.2.3
     environment:
       - CHOKIDAR_USEPOLLING=true
-    # restart: on-failure:3
-#init cart 1
-  cart1:
-    container_name: cart1
+    restart: on-failure:3
+#init cart
+  cart:
     image: cartimg
+    deploy:
+      replicas: 10
     build:
       context:  ./cart
       dockerfile:  Dockerfile
@@ -40,21 +40,4 @@ services:
       FLp2p:
     environment:
       - CHOKIDAR_USEPOLLING=true
-    # restart: on-failure:3
-#init cart 2
-  cart2:
-    container_name: cart2
-    image: cartimg
-    build:
-      context:  ./cart
-      dockerfile:  Dockerfile
-    stdin_open: true
-    tty: true
-    volumes:
-      - ./cart:/app/cart
-    networks:
-      FLp2p:
-    environment:
-      - CHOKIDAR_USEPOLLING=true
-    # restart: on-failure:3
-
+    restart: on-failure:3

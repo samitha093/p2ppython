@@ -2,7 +2,7 @@
 FROM python:3
 
 WORKDIR /app
-COPY ./Main.py ./
+COPY ./ ./
 
 COPY startup.sh .
 RUN chmod +x startup.sh
