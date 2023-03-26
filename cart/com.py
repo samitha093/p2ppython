@@ -2,7 +2,7 @@ import time
 from util import requestModel
 from errorList import errMsg
 
-def communicationProx(mySocket,USERID,MODE,TimerOut,MODELPARAMETERS):
+def communicationProx(mySocket,USERID,MODE,TimerOut,MODELPARAMETERS,oldID):
     CLUSTERID = ""
     PEERLIST = []
     MODELPARAMETERLIST = []
@@ -12,9 +12,10 @@ def communicationProx(mySocket,USERID,MODE,TimerOut,MODELPARAMETERS):
     ################################################################################
     #-----------------------BEGIN----COMMUNICATION SCRIPT--------------------------#
     ################################################################################
-    peerTypeReq = ["PEERTYPE",MODE]#-------------Cluster ID REQUEST-----------------
+    peerTypeReq = ["PEERTYPE",MODE,oldID]#-------------Cluster ID REQUEST-----------------
     mySocket.request(requestModel(USERID,peerTypeReq))
-
+    if USERID != oldID:
+        USERID = oldID
     while CLusterIDLoop: #----------------------GET Cluster-------------------------
         tempDataSet = mySocket.RECIVEQUE.copy()
         if len(tempDataSet) > 0:
@@ -31,13 +32,13 @@ def communicationProx(mySocket,USERID,MODE,TimerOut,MODELPARAMETERS):
                         break
                 else:
                     return MODELPARAMETERLIST
-    for x in PEERLIST:#----------------------GET Model params-------------------
+    for x in PEERLIST:#----------------------REQUEST Model params-------------------
         if x != USERID:
             modelReq = ["MODELREQUEST"]
             mySocket.request(requestModel(USERID,modelReq,x))
             print("SEND MODEL REQUEST TO : ",x)
     timerCal =0
-    while ModelParamLoop:
+    while ModelParamLoop:#----------------------READ Model params-------------------
         tempDataSet = mySocket.RECIVEQUE.copy()
         if len(tempDataSet) > 0:
             for x in tempDataSet:

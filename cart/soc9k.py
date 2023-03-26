@@ -86,6 +86,7 @@ class peerCom:
             self.sender_thread.start()
         except:
             print(errMsg.MSG003.value)
+            self.closeWait = False
             self.close(0,self.USERID)
 
     def sender(self):
@@ -134,7 +135,7 @@ class peerCom:
     def closeNow(self):
         while True:
             if self.closeWait:
-                time.sleep(10)
+                time.sleep(2)
             else:
                 break
         self.is_running = False

@@ -35,7 +35,24 @@ services:
     stdin_open: true
     tty: true
     volumes:
-      - ./cart:/app/cart
+      - ./cart:/app
+    networks:
+      FLp2p:
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+    restart: on-failure:3
+#init mobile
+  mobilimg:
+    image: mobilimg
+    deploy:
+      replicas: 1
+    build:
+      context:  ./mobile
+      dockerfile:  Dockerfile
+    stdin_open: true
+    tty: true
+    volumes:
+      - ./mobile:/app
     networks:
       FLp2p:
     environment:

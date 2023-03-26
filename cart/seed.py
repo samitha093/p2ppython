@@ -2,12 +2,14 @@ import time
 from util import requestModel
 from errorList import errMsg
 
-def seedProx(mySocket,USERID,MODE,MOBILEMODELPARAMETERS,MODELPARAMETERS,SHELL_TIMEOUT):
+def seedProx(mySocket,USERID,MODE,MOBILEMODELPARAMETERS,MODELPARAMETERS,SHELL_TIMEOUT,oldID):
     ModelParamLoop = True
     print(errMsg.MSG004.value)
-    peerTypeReq = ["PEERTYPE",MODE]
+    peerTypeReq = ["PEERTYPE",MODE,oldID]
     mySocket.request(requestModel(USERID,peerTypeReq))
     ########################################################################
+    if USERID != oldID:
+        USERID = oldID
     timerCal =0
     while ModelParamLoop:
         tempDataSet = mySocket.RECIVEQUE.copy()
@@ -20,8 +22,10 @@ def seedProx(mySocket,USERID,MODE,MOBILEMODELPARAMETERS,MODELPARAMETERS,SHELL_TI
                     mySocket.request(requestModel(USERID,modelparameters,x.get("Sender")))
                     print("MODEL PARAMETERS SEND TO : ",x.get("Sender"))
                 elif x.get("Data")[0] == "MOBILEMODELPARAMETERS":
-                    print("parameter requst from Mobile client")
-                    #need more develop more details
+                    print("RECIVED MODEL REQUEST FROM MOBILE - ID : ",x.get("Sender"))
+                    mobilemodelparameters = ["SENDMOBILEMODELPARAMETERS",x.get("Data")[1],MOBILEMODELPARAMETERS]
+                    mySocket.request(requestModel(USERID,mobilemodelparameters,x.get("Sender")))
+                    print("MODEL PARAMETERS SEND TO MOBILE : ",x.get("Sender"))
                 else:
                     print("UNKNOWN MESSAGE : ",x)
         time.sleep(1)

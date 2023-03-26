@@ -1,0 +1,7 @@
+{
+    "java.project.referencedLibraries": [
+        "lib/**/*.jar",
+        "mobile/json.jar",
+        "mobile/lib/json.jar"
+    ]
+}
