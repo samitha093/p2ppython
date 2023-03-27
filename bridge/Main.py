@@ -1,15 +1,22 @@
 import asyncio
+import base64
+import json
 import pickle
 import threading
 import signal
+from aiohttp import web
 import sys
 import time
+
 from rndGen import generateId
 from util import requestModel
 
-HOST = ''
+HOST = 'http://localhost'
 PORT = 9000
 MOBILE_PORT = 8000
+HTTPPORT = 5000
+
+DATALIST = {}
 
 DeviceTable = []
 ClusterTable = {}
@@ -160,10 +167,6 @@ async def handle_mobile(reader, writer):
     userId = generateId(16)
     MOBILEDATARECORDER[userId] = []
     print('Mobile User id : ', userId)
-    myTempdata1 = requestModel(userId,["USERID",userId])
-    myTempdata2 = pickle.dumps(myTempdata1)
-    writer.write(myTempdata2)
-    await writer.drain()
     ######################RUNNER_ENGINE##########################
     if len(DeviceTable) > 0:
         tempReq = requestModel(DeviceTable[0],["MOBILEMODELPARAMETERS",userId])
@@ -174,20 +177,13 @@ async def handle_mobile(reader, writer):
             if len(MOBILEDATARECORDER.get(userId)) > 0:
                 myTempdata = MOBILEDATARECORDER.get(userId)
                 myTempdata1 = myTempdata[0]
-                mobiledata = pickle.dumps(myTempdata1)
-                data_size = sys.getsizeof(mobiledata)
-                data_size_kb = data_size / 1024
-                if data_size_kb < 1:
-                    writer.write(mobiledata)
-                    await writer.drain()
-                else:
-                    print("OVERLOADED DATA FOUND : ",data_size_kb,"KB")
-                    MAX_CHUNK_SIZE = 1024
-                    chunks = [mobiledata[i:i+MAX_CHUNK_SIZE] for i in range(0, len(mobiledata), MAX_CHUNK_SIZE)]
-                    print("NO OF CHUNKS : ",len(chunks)," : SENDED")
-                    for x in chunks:
-                        writer.write(x)
-                        await writer.drain()
+                myTempdatadataID = myTempdata1.get("Data")[1]
+                myTempdatadataPARAMETERS = myTempdata1.get("Data")[2]
+                print(type(myTempdatadataPARAMETERS)," : ", len(myTempdatadataPARAMETERS)/1024 , " KB")
+                add_path(myTempdatadataID,myTempdatadataPARAMETERS)
+                httpLink = HOST+":5000/download?ID="+myTempdatadataID
+                writer.write(httpLink.encode() + b'\n')
+                await writer.drain()
                 myTempdata.remove(myTempdata1)
                 break
     else:
@@ -196,11 +192,19 @@ async def handle_mobile(reader, writer):
     writer.close()
     print('Mobile Connection Closed : ',addr)
 
+# This is the http server
+async def handle_download(request):
+    id = request.query.get('ID')
+    if id in DATALIST:
+        data = DATALIST[id]
+        return web.Response(status=200, body=data)
+    else:
+        return web.Response(status=404)
 
 def function_1():
     async def cart_Server():
-        server = await asyncio.start_server(handle_client, HOST, PORT)
-        print(f"Server listening on {HOST}:{PORT}")
+        server = await asyncio.start_server(handle_client, '', PORT)
+        print(f"Server listening on {''}:{PORT}")
         async with server:
             await server.serve_forever()
     try:
@@ -214,8 +218,8 @@ def function_1():
 
 def function_2():
     async def mobile_Server():
-        mobile_server = await asyncio.start_server(handle_mobile, HOST, MOBILE_PORT)
-        print(f"Mobile server listening on {HOST}:{MOBILE_PORT}")
+        mobile_server = await asyncio.start_server(handle_mobile, '', MOBILE_PORT)
+        print(f"Mobile server listening on {''}:{MOBILE_PORT}")
         async with mobile_server:
             await mobile_server.serve_forever()
     try:
@@ -227,15 +231,44 @@ def function_2():
         print("mobile server stopped: Rutime error")
         sys.exit(0)
 
+def add_path(userId,data):
+    DATALIST[userId] = data
+
+def function_3():
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    async def run_server():
+        app = web.Application()
+        app.add_routes([web.get('/download', handle_download)])
+        runner = web.AppRunner(app)
+        await runner.setup()
+        site = web.TCPSite(runner, '0.0.0.0', HTTPPORT)
+        await site.start()
+        print(f"HTTP Proxy at http://localhost:{HTTPPORT}")
+        await asyncio.sleep(3600*24*365)
+
+    loop.create_task(run_server())
+
+    five_mb_bytes = b'\x00' * 5 * 1024 * 1024
+    add_path('123',five_mb_bytes)
+
+    try:
+        loop.run_forever()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        loop.close()
 
 if __name__ == "__main__":
     running = True
     try:
         thread1 = threading.Thread(target=function_1)
         thread2 = threading.Thread(target=function_2)
+        thread3 = threading.Thread(target=function_3)
 
         thread1.start()
         thread2.start()
+        thread3.start()
 
         while running:
             time.sleep(1)
@@ -251,3 +284,4 @@ if __name__ == "__main__":
     finally:
         thread1.join()
         thread2.join()
+        thread3.join()

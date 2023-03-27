@@ -25,10 +25,10 @@ MODELPARAMETERS  = "jhjhhkhkhkl"
 
 ########################################################################
 #------------------------------MOBILE MODEL----------------------------#
-MOBILEMODELPARAMETERS  = "jhjhhkhkhkl"
+# MOBILEMODELPARAMETERS  = "jhjhhkhkhkl"
 # MOBILEMODELPARAMETERS  = bytes(1024)  # 1 KB
 # MOBILEMODELPARAMETERS  = bytes(1024*1024)  # 1 MB
-# MOBILEMODELPARAMETERS  = bytes(5*1024*1024)  # 5 MB
+MOBILEMODELPARAMETERS  = bytes(5*1024*1024)  # 5 MB
 ########################################################################
 
 def sigint_handler(signal, frame, mySocket, USERID):
