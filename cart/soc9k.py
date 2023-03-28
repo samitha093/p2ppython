@@ -33,7 +33,9 @@ class peerCom:
             return self.USERID
         except:
             print(errMsg.MSG002.value)
+            self.closeWait = False
             self.close(0,self.USERID)
+            sys.exit(0)
 
     def start_receiver(self):
         self.is_running = True
@@ -42,7 +44,9 @@ class peerCom:
             self.receiver_thread.start()
         except:
             print(errMsg.MSG003.value)
+            self.closeWait = False
             self.close(0,self.USERID)
+            sys.exit(0)
 
     def receiver(self):
         continueData = False
@@ -88,6 +92,7 @@ class peerCom:
             print(errMsg.MSG003.value)
             self.closeWait = False
             self.close(0,self.USERID)
+            sys.exit(0)
 
     def sender(self):
         try:
@@ -109,7 +114,9 @@ class peerCom:
                     time.sleep(2)
         except:
             print(errMsg.MSG003.value)
+            self.closeWait = False
             self.close(0,self.USERID)
+            sys.exit(0)
 
     def request(self, data):
         self.SENDQUE.append(data)

@@ -1,9 +1,9 @@
 import asyncio
-import base64
-import json
+from asyncore import loop
+import os
 import pickle
-import threading
 import signal
+import threading
 from aiohttp import web
 import sys
 import time
@@ -17,6 +17,10 @@ MOBILE_PORT = 8000
 HTTPPORT = 5000
 
 DATALIST = {}
+running = True
+mobile_server_task = None
+cart_server_task = None
+
 
 DeviceTable = []
 ClusterTable = {}
@@ -92,7 +96,7 @@ def requestHandler(data):
 
 # This is the coroutine that will handle incoming cart connections
 async def handle_client(reader, writer):
-    global shared_data
+    global running
     print('----------------------------------------------------------------')
     addr = writer.get_extra_info('peername')
     print('Connected by', addr)
@@ -160,6 +164,7 @@ async def handle_client(reader, writer):
 async def handle_mobile(reader, writer):
     global MOBILEDATARECORDER
     global DATARECORDER
+    global running
     print('*****************************************************************')
     addr = writer.get_extra_info('peername')
     print('Connected by', addr)
@@ -194,6 +199,7 @@ async def handle_mobile(reader, writer):
 
 # This is the http server
 async def handle_download(request):
+    global running
     id = request.query.get('ID')
     if id in DATALIST:
         data = DATALIST[id]
@@ -202,40 +208,59 @@ async def handle_download(request):
         return web.Response(status=404)
 
 def function_1():
+    global running
+    global cart_server_task
     async def cart_Server():
+        global cart_server_task
         server = await asyncio.start_server(handle_client, '', PORT)
-        print(f"Server listening on {''}:{PORT}")
-        async with server:
-            await server.serve_forever()
+        print(f"Server Stared on {''}:{PORT}")
+        try:
+            async with server:
+                asyncio.create_task(server.serve_forever())
+                while running:
+                    await asyncio.sleep(1)
+        except asyncio.CancelledError:
+            server.close()
+            await server.wait_closed()
+            print("cart server stopped.")
+        server.close()
+        await server.wait_closed()
+        print("Server Shutdown : ",PORT)
     try:
         asyncio.run(cart_Server())
-    except KeyboardInterrupt:
-        print("cart server stopped by user.")
-        sys.exit(0)
     except:
         print("cart server stopped: Rutime error")
         sys.exit(0)
 
 def function_2():
+    global running
+    global mobile_server_task
     async def mobile_Server():
-        mobile_server = await asyncio.start_server(handle_mobile, '', MOBILE_PORT)
-        print(f"Mobile server listening on {''}:{MOBILE_PORT}")
-        async with mobile_server:
-            await mobile_server.serve_forever()
+        global mobile_server_task
+        mobile_server_task = await asyncio.start_server(handle_mobile, '', MOBILE_PORT)
+        print(f"Server Stared on {''}:{MOBILE_PORT}")
+        try:
+            async with mobile_server_task:
+                asyncio.create_task(mobile_server_task.serve_forever())
+                while running:
+                    await asyncio.sleep(1)
+        except asyncio.CancelledError:
+            mobile_server_task.close()
+            await mobile_server_task.wait_closed()
+            print("mobile server stopped.")
+        mobile_server_task.close()
+        await mobile_server_task.wait_closed()
+        print("Server Shutdown : ",MOBILE_PORT)
     try:
         asyncio.run(mobile_Server())
-    except KeyboardInterrupt:
-        print("mobile server stopped by user.")
-        sys.exit(0)
     except:
         print("mobile server stopped: Rutime error")
-        sys.exit(0)
 
 def add_path(userId,data):
     DATALIST[userId] = data
 
-def function_3():
-    loop = asyncio.new_event_loop()
+def function_3(loop):
+    global running
     asyncio.set_event_loop(loop)
     async def run_server():
         app = web.Application()
@@ -244,8 +269,11 @@ def function_3():
         await runner.setup()
         site = web.TCPSite(runner, '0.0.0.0', HTTPPORT)
         await site.start()
-        print(f"HTTP Proxy at http://localhost:{HTTPPORT}")
-        await asyncio.sleep(3600*24*365)
+        print(f"HTTP Proxy started on{''}:{HTTPPORT}")
+        while running:
+            await asyncio.sleep(1)
+        print("HTTP Proxy Shutdown : ",HTTPPORT)
+        loop.stop()
 
     loop.create_task(run_server())
 
@@ -256,32 +284,46 @@ def function_3():
         loop.run_forever()
     except KeyboardInterrupt:
         pass
+    except:
+        print("HTTP Proxy Shutdown")
     finally:
+        pending_tasks = asyncio.all_tasks(loop=loop)
+        # wait for pending tasks to complete
+        for task in pending_tasks:
+            task.cancel()
+        loop.run_until_complete(asyncio.gather(*pending_tasks, return_exceptions=True))
         loop.close()
 
+def sigint_handler(signal, frame):
+    print('Exiting program...')
+    global running
+    running = False
+    print("Waiting for threads to finish...")
+    while thread1.is_alive() or thread2.is_alive() or thread3.is_alive():
+        if thread1.is_alive():
+            print("Thread 1 is still running.")
+        if thread2.is_alive():
+            print("Thread 2 is still running.")
+        if thread3.is_alive():
+            print("Thread 3 is still running.")
+        time.sleep(5)
+    print("All threads finished.")
+    sys.exit(0)
+
 if __name__ == "__main__":
-    running = True
+    signal.signal(signal.SIGINT, sigint_handler)
+    loop = asyncio.new_event_loop()
+    thread1 = threading.Thread(target=function_1)
+    thread2 = threading.Thread(target=function_2)
+    thread3 = threading.Thread(target=function_3, args=(loop,))
+
+    thread1.start()
+    thread2.start()
+    thread3.start()
     try:
-        thread1 = threading.Thread(target=function_1)
-        thread2 = threading.Thread(target=function_2)
-        thread3 = threading.Thread(target=function_3)
-
-        thread1.start()
-        thread2.start()
-        thread3.start()
-
         while running:
             time.sleep(1)
 
-    except KeyboardInterrupt:
-        print("Program stopped by user.")
-        running = False
-        sys.exit(0)
     except:
         print("Program stopped: Rutime error")
         running = False
-        sys.exit(0)
-    finally:
-        thread1.join()
-        thread2.join()
-        thread3.join()
