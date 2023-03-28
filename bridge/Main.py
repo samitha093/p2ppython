@@ -11,7 +11,7 @@ import time
 from rndGen import generateId
 from util import requestModel
 
-HOST = 'http://localhost'
+HOST = 'http://141.145.200.6'
 PORT = 9000
 MOBILE_PORT = 8000
 HTTPPORT = 5000

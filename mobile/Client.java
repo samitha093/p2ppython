@@ -2,7 +2,7 @@ import java.net.*;
 import java.io.*;
 
 public class Client {
-    private static final String SERVER_ADDRESS = "localhost";
+    private static final String SERVER_ADDRESS = "141.145.200.6";
     private static final int SERVER_PORT = 8000;
 
     public static void main(String[] args) throws IOException {
@@ -18,7 +18,7 @@ public class Client {
             //socket close
             socket.close();
             try {
-                MyUrl = "http://localhost:5000/download?ID=123";
+                // MyUrl = "http://localhost:5000/download?ID=123";
                 URL url = new URL(MyUrl);
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 conn.setRequestMethod("GET");

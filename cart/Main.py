@@ -10,7 +10,7 @@ from com import communicationProx
 from seed import seedProx
 from file import getID
 
-HOST = 'localhost' #172.20.2.3
+HOST = '141.145.200.6' #141.145.200.6
 PORT = 9000
 
 ########################################################################
