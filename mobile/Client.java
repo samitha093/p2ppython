@@ -18,7 +18,7 @@ public class Client {
             //socket close
             socket.close();
             try {
-                // MyUrl = "http://localhost:5000/download?ID=123";
+                // MyUrl = "http://141.145.200.6:5000/download?ID=123";
                 URL url = new URL(MyUrl);
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 conn.setRequestMethod("GET");

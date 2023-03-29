@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # java Main
-java -cp ./json.jar;. Client
+java Client
 
 while true
 do
